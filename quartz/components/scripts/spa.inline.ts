@@ -2,6 +2,14 @@ import micromorph from "micromorph"
 import { FullSlug, RelativeURL, getFullSlug, normalizeRelativeURLs } from "../../util/path"
 import { fetchCanonical } from "./util"
 
+// Add this interface declaration
+declare global {
+  interface Window {
+    quartzDecrypt?: () => void;
+    addCleanup: (fn: (...args: any[]) => void) => any;
+  }
+}
+
 // adapted from `micromorph`
 // https://github.com/natemoo-re/micromorph
 const NODE_TYPE_ELEMENT = 1
@@ -120,6 +128,11 @@ async function navigate(url: URL, isBack: boolean = false) {
     history.pushState({}, "", url)
   }
 
+  // Call the decryption function after navigation
+  if (typeof window.quartzDecrypt === 'function') {
+    window.quartzDecrypt();
+  }
+
   notifyNav(getFullSlug(window))
   delete announcer.dataset.persist
 }
@@ -158,6 +171,12 @@ function createRouter() {
       }
       return
     })
+
+    window.addEventListener("nav", () => {
+      if (typeof window.quartzDecrypt === 'function') {
+        window.quartzDecrypt();
+      }
+    })
   }
 
   return new (class Router {
@@ -175,6 +194,40 @@ function createRouter() {
     }
   })()
 }
+
+function decryptContent() {
+  const password = getCookie('decryptionPassword');
+  if (!password) return;
+
+  const articles = document.querySelectorAll('article.encrypted p');
+  articles.forEach(p => {
+    try {
+      const decrypted = CryptoJS.AES.decrypt(p.textContent!.trim(), password).toString(CryptoJS.enc.Utf8);
+      if (decrypted) {
+        const article = p.parentElement;
+        if (article) {
+          article.innerHTML = decrypted;
+          p.classList.remove('encrypted');
+          article.classList.add('decrypted');
+        }
+      }
+    } catch (e) {
+      console.error('Decryption failed for', p, e);
+    }
+  });
+}
+
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+}
+
+// Assign the decryptContent function to window.quartzDecrypt
+window.quartzDecrypt = decryptContent;
+
+// Call decryptContent on initial load
+document.addEventListener('DOMContentLoaded', decryptContent);
 
 createRouter()
 notifyNav(getFullSlug(window))
