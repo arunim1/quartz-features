@@ -2,7 +2,6 @@ import FlexSearch from "flexsearch"
 import { ContentDetails } from "../../plugins/emitters/contentIndex"
 import { registerEscapeHandler, removeAllChildren } from "./util"
 import { FullSlug, normalizeRelativeURLs, resolveRelative } from "../../util/path"
-import CryptoJS from "crypto-js"
 
 interface Item {
   id: number
@@ -45,22 +44,6 @@ const fetchContentCache: Map<FullSlug, Element[]> = new Map()
 const contextWindowWords = 30
 const numSearchResults = 8
 const numTagResults = 5
-
-function decryptContent(encryptedContent: string, password: string): string {
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedContent, password)
-    return bytes.toString(CryptoJS.enc.Utf8)
-  } catch (error) {
-    console.error('Decryption failed:', error)
-    return ''
-  }
-}
-
-function getCookie(name: string) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift();
-}
 
 const tokenizeTerm = (term: string) => {
   const tokens = term.split(/\s+/).filter((t) => t.trim() !== "")
@@ -392,30 +375,7 @@ document.addEventListener("nav", async (e: CustomEventMap["nav"]) => {
         }
         const html = p.parseFromString(contents ?? "", "text/html")
         normalizeRelativeURLs(html, targetUrl)
-        
-        const elements = [...html.getElementsByClassName("popover-hint")]
-
-        // Try to decrypt content if password exists
-        const password = getCookie("decryptionPassword")
-        if (password) {
-          for (const element of elements) {
-            const content = element.textContent || ''
-            // Check if content appears to be encrypted (base64-like string)
-            if (content.match(/^[A-Za-z0-9+/=]+$/)) {
-              try {
-                const decryptedText = decryptContent(content, password)
-                if (decryptedText) {
-                  element.innerHTML = `<article class='popover-hint'>${decryptedText}</article>`
-                }
-              } catch (error) {
-                // If decryption fails, leave content as is
-                console.debug('Decryption failed in preview, content might not be encrypted:', error)
-              }
-            }
-          }
-        }
-        
-        return elements
+        return [...html.getElementsByClassName("popover-hint")]
       })
 
     fetchContentCache.set(slug, contents)
@@ -517,29 +477,13 @@ document.addEventListener("nav", async (e: CustomEventMap["nav"]) => {
 async function fillDocument(data: { [key: FullSlug]: ContentDetails }) {
   let id = 0
   const promises: Array<Promise<unknown>> = []
-  const password = getCookie("decryptionPassword")
-
   for (const [slug, fileData] of Object.entries<ContentDetails>(data)) {
-    let content = fileData.content
-    
-    // Try to decrypt content if password exists and content looks encrypted
-    if (password && content.match(/^[A-Za-z0-9+/=]+$/)) {
-      try {
-        const decryptedText = decryptContent(content, password)
-        if (decryptedText) {
-          content = decryptedText
-        }
-      } catch (error) {
-        console.debug('Decryption failed for', slug, ', content might not be encrypted:', error)
-      }
-    }
-
     promises.push(
       index.addAsync(id++, {
         id,
         slug: slug as FullSlug,
         title: fileData.title,
-        content: content,
+        content: fileData.content,
         tags: fileData.tags,
       }),
     )

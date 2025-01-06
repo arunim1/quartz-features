@@ -1,7 +1,6 @@
 import { computePosition, flip, inline, shift } from "@floating-ui/dom"
 import { normalizeRelativeURLs } from "../../util/path"
 import { fetchCanonical } from "./util"
-import CryptoJS from 'crypto-js';
 
 const p = new DOMParser()
 async function mouseEnterHandler(
@@ -89,8 +88,6 @@ async function mouseEnterHandler(
       elts.forEach((elt) => popoverInner.appendChild(elt))
   }
 
-  decryptContent(popoverInner);
-
   setPosition(popoverElement)
   link.appendChild(popoverElement)
 
@@ -100,33 +97,6 @@ async function mouseEnterHandler(
       // leave ~12px of buffer when scrolling to a heading
       popoverInner.scroll({ top: heading.offsetTop - 12, behavior: "instant" })
     }
-  }
-  function decryptContent(element: HTMLElement) {
-    const password = getCookie('decryptionPassword');
-    if (!password) return;
-  
-    const articles = element.querySelectorAll('article.encrypted p');
-    articles.forEach(p => {
-      try {
-        const decrypted = CryptoJS.AES.decrypt(p.textContent!.trim(), password).toString(CryptoJS.enc.Utf8);
-        if (decrypted) {
-          const article = p.parentElement;
-          if (article) {
-            article.innerHTML = decrypted;
-            p.classList.remove('encrypted');
-            article.classList.add('decrypted');
-          }
-        }
-      } catch (e) {
-        console.error('Decryption failed for', p, e);
-      }
-    });
-  }
-  
-  function getCookie(name: string) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
   }
 }
 
