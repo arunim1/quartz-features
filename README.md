@@ -1,6 +1,6 @@
 # Quartz v4
 
-This is a fork of Quartz! See original README below. This fork adds support for partially and selectively encrypting content on your site, and password protection of this content. Feel free to clone this repo and use it, or just check the [changes](https://github.com/jackyzha0/quartz/commit/efce252d283c4da5ccd6849fdf8e70d66af98699) made to:
+This is a fork of Quartz! See original README below. This fork adds support for partially and selectively encrypting content on your site, and password protection of this content. Feel free to clone this repo and use it, or just check the changes made to:
 - [package.json](/package.json) 
 - [quartz.config.ts](/quartz.config.ts)
 - [quartz/plugins/emitters/encrypt.ts](/quartz/plugins/emitters/encrypt.ts)
