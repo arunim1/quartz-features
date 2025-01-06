@@ -1,0 +1,42 @@
+name: Sync fork with upstream v4
+
+# Run the workflow once a day at midnight UTC until I'm sure it works, then change it to once a week
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Every day at 0:00 UTC
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest  # Runs on GitHub's servers, not your local machine
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensure full history is fetched
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/jackyzha0/quartz.git
+
+      - name: Fetch upstream branches
+        run: git fetch upstream
+
+      # Define the branches you want to sync
+      - name: Create PRs for each branch
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'Sync upstream v4'
+          body: |
+            Automated sync from upstream `v4` branch.
+          base: ${{ matrix.target_branch }}
+          head: upstream/v4
+          branch: sync-upstream-v4-${{ matrix.target_branch }}
+        strategy:
+          matrix:
+            target_branch: [v4, encrypt, logseq]
