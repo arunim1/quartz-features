@@ -3,11 +3,16 @@ name: Sync fork with upstream v4
 # Run the workflow once a day at midnight UTC until I'm sure it works, then change it to once a week
 on:
   schedule:
-    - cron: '0 0 * * *'  # Every day at 0:00 UTC
+    # Every day at 0:45 UTC
+    - cron: '45 0 * * *'
 
 jobs:
   sync-upstream:
     runs-on: ubuntu-latest  # Runs on GitHub's servers, not your local machine
+    
+    strategy:
+      matrix:
+        target_branch: [v4, encrypt, logseq]
 
     steps:
       - name: Checkout the repository
@@ -37,6 +42,3 @@ jobs:
           base: ${{ matrix.target_branch }}
           head: upstream/v4
           branch: sync-upstream-v4-${{ matrix.target_branch }}
-        strategy:
-          matrix:
-            target_branch: [v4, encrypt, logseq]
