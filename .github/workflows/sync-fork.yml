@@ -3,8 +3,8 @@ name: Sync fork with upstream v4
 # Run the workflow once a day at midnight UTC until I'm sure it works, then change it to once a week
 on:
   schedule:
-    # Every day at 0:45 UTC
-    - cron: '35 1 * * *'
+    # Every Sunday at 0:00 UTC
+    - cron: '0 0 * * 0'
 
 jobs:
   sync-upstream:
