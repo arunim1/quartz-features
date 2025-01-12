@@ -107,23 +107,27 @@ export const Encrypt: QuartzEmitterPlugin = () => {
       }
     
       function authenticateAndGetPassword() {
+        // First try to get the decryption password from cookie
         let password = getCookie('decryptionPassword');
         if (password) {
           return password;
         }
-    
+
+        // If no decryption password, try to regenerate it from user password
         const userPassword = getCookie('userPassword');
         if (userPassword) {
           const userEntry = encryptedMasterPasswords.find(entry => userPassword.startsWith(entry.id));
           if (userEntry) {
             try {
+              // Try to decrypt the master password using the user password
               password = decryptMasterPassword(userEntry.encryptedPassword, userPassword);
               if (password) {
+                // Successfully regenerated master password, store it in cookie
                 setCookie("decryptionPassword", password, 1);
                 return password;
               }
             } catch (error) {
-              console.error("Failed to decrypt master password");
+              console.error("Failed to decrypt master password:", error);
             }
           }
         }
