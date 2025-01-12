@@ -66,21 +66,32 @@ export const LogseqOutdent: QuartzTransformerPlugin = () => ({
 
     const indentStyle = detectIndentationStyle(lines)
 
-    // Find the first non-indented block
-    let firstNonIndentedBlockEnd = lines.findIndex((line, index) => {
-      // if (index === 0) return false; // Skip the first line
-      return line.startsWith('-') || line.trim() === '';
-    });
+    // Collect all frontmatter properties and content lines separately
+    const frontmatterProps: string[] = []
+    const contentLines: string[] = []
+    
+    lines.forEach(line => {
+      // Check if line contains :: separator (frontmatter property)
+      if (line.includes('::')) {
+        const trimmedLine = line.trim()
+        if (trimmedLine.startsWith('- ')) {
+          frontmatterProps.push(trimmedLine.substring(2))
+        } else {
+          frontmatterProps.push(trimmedLine)
+        }
+      } else {
+        contentLines.push(line)
+      }
+    })
 
-    // If no non-indented content is found at the beginning, don't modify the file
-    if (!(firstNonIndentedBlockEnd === -1 || firstNonIndentedBlockEnd === 0)) {
-      // Wrap the first non-indented block with "---"
+    // Combine everything with frontmatter at the top
+    if (frontmatterProps.length > 0) {
       lines = [
         "---",
-        ...lines.slice(0, firstNonIndentedBlockEnd),
+        ...frontmatterProps,
         "---",
-        ...lines.slice(firstNonIndentedBlockEnd)
-      ];
+        ...contentLines
+      ]
     }
 
     lines = lines
