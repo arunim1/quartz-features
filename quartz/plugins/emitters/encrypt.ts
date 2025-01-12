@@ -83,7 +83,8 @@ export const Encrypt: QuartzEmitterPlugin = () => {
       const decryptionScript = `<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
       <script>
     (function() {
-      const encryptedMasterPasswords = ${JSON.stringify(encryptedMasterPasswords)};
+      // Make encryptedMasterPasswords available globally for SPA navigation
+      window.encryptedMasterPasswords = ${JSON.stringify(encryptedMasterPasswords)};
     
       function getCookie(name) {
         const value = \`\${document.cookie}\`;

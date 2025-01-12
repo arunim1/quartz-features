@@ -7,6 +7,8 @@ declare global {
   interface Window {
     quartzDecrypt?: () => void;
     addCleanup: (fn: (...args: any[]) => void) => any;
+    encryptedMasterPasswords?: Array<{ id: string, encryptedPassword: string }>;
+    spaNavigate: (url: URL, isBack?: boolean) => any;
   }
 }
 
@@ -196,7 +198,8 @@ function createRouter() {
 }
 
 function decryptContent() {
-  const password = getCookie('decryptionPassword');
+  // Try to get or regenerate the decryption password
+  const password = authenticateAndGetPassword();
   if (!password) return;
 
   const articles = document.querySelectorAll('article.encrypted p');
@@ -221,6 +224,49 @@ function getCookie(name: string) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(';').shift();
+}
+
+function setCookie(name: string, value: string, days?: number) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+}
+
+function decryptMasterPassword(encryptedPassword: string, userPassword: string) {
+  const decrypted = CryptoJS.AES.decrypt(encryptedPassword, userPassword);
+  return decrypted.toString(CryptoJS.enc.Utf8);
+}
+
+function authenticateAndGetPassword() {
+  // First try to get the decryption password from cookie
+  let password = getCookie('decryptionPassword');
+  if (password) {
+    return password;
+  }
+
+  // If no decryption password, try to regenerate it from user password
+  const userPassword = getCookie('userPassword');
+  if (userPassword && window.encryptedMasterPasswords) {
+    const userEntry = window.encryptedMasterPasswords.find(entry => userPassword.startsWith(entry.id));
+    if (userEntry) {
+      try {
+        // Try to decrypt the master password using the user password
+        password = decryptMasterPassword(userEntry.encryptedPassword, userPassword);
+        if (password) {
+          // Successfully regenerated master password, store it in cookie
+          setCookie("decryptionPassword", password, 1);
+          return password;
+        }
+      } catch (error) {
+        console.error("Failed to decrypt master password:", error);
+      }
+    }
+  }
+  return null;
 }
 
 // Assign the decryptContent function to window.quartzDecrypt
