@@ -103,6 +103,18 @@ export const LogseqOutdent: QuartzTransformerPlugin = () => ({
     lines = lines.flatMap(line => {
       const [key, value] = line.split('::').map(s => s.trim());
       const matches = value?.match(/\[\[(.*?)\]\]/g);
+      
+      // If this is a date field, remove ordinal suffixes from dates
+      if (key?.toLowerCase() === 'date' && matches) {
+        return [key + '::', ...matches.map(m => {
+          // Remove the [[ and ]] and process the date
+          const dateText = m.slice(2, -2)
+          // Remove ordinal suffixes (st, nd, rd, th)
+          const processedDate = dateText.replace(/(\d+)(st|nd|rd|th)/, '$1')
+          return `- [[${processedDate}]]`
+        })]
+      }
+      
       return matches ? [key + '::', ...matches.map(m => `- ${m.slice(2, -2)}`)] : [line];
     });
 
