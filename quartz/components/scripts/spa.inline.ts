@@ -202,20 +202,21 @@ function decryptContent() {
   const password = authenticateAndGetPassword();
   if (!password) return;
 
-  const articles = document.querySelectorAll('article.encrypted p');
-  articles.forEach(p => {
+  const articles = document.querySelectorAll('article.encrypted');
+  articles.forEach(article => {
+    const encryptedDiv = article.querySelector('.encrypted-content');
+    const messageDiv = article.querySelector('.encrypted-message');
+    if (!encryptedDiv || !messageDiv) return;
+    
     try {
-      const decrypted = CryptoJS.AES.decrypt(p.textContent!.trim(), password).toString(CryptoJS.enc.Utf8);
+      const decrypted = CryptoJS.AES.decrypt(encryptedDiv.textContent!.trim(), password).toString(CryptoJS.enc.Utf8);
       if (decrypted) {
-        const article = p.parentElement;
-        if (article) {
-          article.innerHTML = decrypted;
-          p.classList.remove('encrypted');
-          article.classList.add('decrypted');
-        }
+        article.innerHTML = decrypted;
+        article.classList.remove('encrypted');
+        article.classList.add('decrypted');
       }
     } catch (e) {
-      console.error('Decryption failed for', p, e);
+      console.error('Decryption failed for', article, e);
     }
   });
 }

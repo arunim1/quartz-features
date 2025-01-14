@@ -19,7 +19,9 @@ function encryptMasterPassword(masterPassword: string | CryptoJS.lib.WordArray, 
 }
 
 function encryptContent(content: string, password: string): string {
-  return CryptoJS.AES.encrypt(content, password).toString()
+  const encryptedText = CryptoJS.AES.encrypt(content, password).toString()
+  return `<div class="encrypted-message">🔒This page is locked. Return <a href="/">home</a> and enter a password.`+
+  `</div><div class="encrypted-content" style="display: none;">${encryptedText}</div>`
 }
 
 export const Encrypt: QuartzEmitterPlugin = () => {
@@ -292,8 +294,8 @@ export const Encrypt: QuartzEmitterPlugin = () => {
               const articleRegex = /(<article class="popover-hint">)([\s\S]*?)(<\/article>)/g
               const newContent = fileContent
                 .replace(articleRegex, (match, p1, p2, p3) => {
-                  const encrypted = CryptoJS.AES.encrypt(p2, masterPassword ?? '').toString()
-                  return `<article class="popover-hint encrypted"><p>${encrypted}</p>${p3}`
+                  const encrypted = encryptContent(p2, masterPassword ?? '')
+                  return `<article class="popover-hint encrypted">${encrypted}${p3}`
                 })
                 .replace(/<head>/, '<head>' + decryptionScript)
               await fs.writeFile(fullPath, newContent, 'utf-8')
