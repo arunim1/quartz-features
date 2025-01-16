@@ -101,7 +101,7 @@ export const Encrypt: QuartzEmitterPlugin = () => {
       function setCookie(name, value, days) {
         const maxAge = days ? days * 24 * 60 * 60 : undefined;
         const securityFlags = 'Secure; SameSite=Strict';
-        document.cookie = \`${name}=\${encodeURIComponent(value)}; path=/\` + 
+        document.cookie = \`\${name}=\${encodeURIComponent(value)}; path=/\` + 
           (maxAge ? \`; max-age=\${maxAge}\` : '') +
           \`; \${securityFlags}\`;
       }
