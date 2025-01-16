@@ -19,6 +19,9 @@ function encryptMasterPassword(masterPassword: string | CryptoJS.lib.WordArray, 
 }
 
 function encryptContent(content: string, password: string): string {
+  if (password === '') {
+    return content
+  }
   const encryptedText = CryptoJS.AES.encrypt(content, password).toString()
   return `<div class="encrypted-message">🔒This page is locked. Return <a href="/">home</a> and enter a password.`+
   `</div><div class="encrypted-content" style="display: none;">${encryptedText}</div>`
@@ -34,11 +37,12 @@ export const Encrypt: QuartzEmitterPlugin = () => {
       const publicDir = ctx.argv.output
       const contentIndexPath = path.join(publicDir, "static", "contentIndex.json")
       
-      // Get master password from env or use default
+      // Get master password from env 
       let masterPassword = process.env.MASTER_PASSWORD 
       if (!masterPassword) {
-        masterPassword = 'sodiumproductpolicyissues'
-        console.log(chalk.red('No master password found, using default password'))
+        masterPassword = ''
+        throw new Error('MASTER_PASSWORD environment variable must be set for encryption to work. Please set it in your .env file.')
+
       }
 
       // Encrypt contentIndex.json
@@ -95,13 +99,11 @@ export const Encrypt: QuartzEmitterPlugin = () => {
       }
     
       function setCookie(name, value, days) {
-        let expires = "";
-        if (days) {
-          const date = new Date();
-          date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-          expires = "; expires=" + date.toUTCString();
-        }
-        document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+        const maxAge = days ? days * 24 * 60 * 60 : undefined;
+        const securityFlags = 'Secure; SameSite=Strict';
+        document.cookie = \`${name}=\${encodeURIComponent(value)}; path=/\` + 
+          (maxAge ? \`; max-age=\${maxAge}\` : '') +
+          \`; \${securityFlags}\`;
       }
     
       function decryptMasterPassword(encryptedPassword, userPassword) {
@@ -234,8 +236,8 @@ export const Encrypt: QuartzEmitterPlugin = () => {
               try {
                 const decryptedMasterPassword = decryptMasterPassword(userEntry.encryptedPassword, password);
                 if (decryptedMasterPassword) {
-                  document.cookie = "decryptionPassword=" + encodeURIComponent(decryptedMasterPassword) + "; path=/; max-age=86400";
-                  document.cookie = "userPassword=" + encodeURIComponent(password) + "; path=/; max-age=31536000";
+                  document.cookie = "decryptionPassword=" + encodeURIComponent(decryptedMasterPassword) + "; path=/; max-age=86400; Secure; SameSite=Strict";
+                  document.cookie = "userPassword=" + encodeURIComponent(password) + "; path=/; max-age=31536000; Secure; SameSite=Strict";
                   alert("Authentication successful. Page will be decrypted momentarily.");
                   location.reload();
                 } else {

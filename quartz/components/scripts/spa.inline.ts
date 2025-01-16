@@ -202,7 +202,8 @@ function decryptContent() {
   const password = authenticateAndGetPassword();
   if (!password) return;
 
-  const articles = document.querySelectorAll('article.encrypted');
+  // Decrypt both main articles and preview articles
+  const articles = document.querySelectorAll('article.encrypted, div.preview-article.encrypted');
   articles.forEach(article => {
     const encryptedDiv = article.querySelector('.encrypted-content');
     const messageDiv = article.querySelector('.encrypted-message');
@@ -228,13 +229,11 @@ function getCookie(name: string) {
 }
 
 function setCookie(name: string, value: string, days?: number) {
-  let expires = "";
-  if (days) {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    expires = "; expires=" + date.toUTCString();
-  }
-  document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+  const maxAge = days ? days * 24 * 60 * 60 : undefined;
+  const securityFlags = 'Secure; SameSite=Strict';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/` + 
+    (maxAge ? `; max-age=${maxAge}` : '') +
+    `; ${securityFlags}`;
 }
 
 function decryptMasterPassword(encryptedPassword: string, userPassword: string) {
